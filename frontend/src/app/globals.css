@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #f9f9ff;
+    --foreground: #191c23;
+    --surface: #f9f9ff;
+    --surface-lowest: #ffffff;
+    --surface-low: #f2f3fd;
+    --surface-container: #ecedf7;
+    --surface-container-high: #e6e8f2;
+    --surface-container-highest: #e0e2ec;
+    --primary: #000a21;
+    --primary-container: #14213a;
+    --on-primary: #ffffff;
+    --on-primary-container: #7c89a7;
+    --secondary: #98700a;
+    --secondary-container: #fdca63;
+    --border: #e2e8f0;
+    --border-subtle: #edf2f7;
+    --muted: #4a5568;
+    --muted-foreground: #718096;
+  }
+
+  .dark {
+    --background: #0b1019;
+    --foreground: #f8f9fa;
+    --surface: #0b1019;
+    --surface-lowest: #0e1522;
+    --surface-low: #121a28;
+    --surface-container: #141c2b;
+    --surface-container-high: #1a2436;
+    --surface-container-highest: #222e42;
+    --primary: #f8f9fa;
+    --primary-container: #141c2b;
+    --on-primary: #0b1019;
+    --on-primary-container: #bac6e7;
+    --secondary: #c2931d;
+    --secondary-container: #5d4200;
+    --border: #222e42;
+    --border-subtle: #1a2436;
+    --muted: #a0aec0;
+    --muted-foreground: #cbd5e0;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-inter), Inter, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    letter-spacing: -0.015em;
+  }
+}
+
+/* Custom broadsheet hairline divider utility */
+.broadsheet-hairline {
+  border-color: var(--border);
+}
