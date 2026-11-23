@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Search, Menu, X, Bell } from "lucide-react";
+import { Search, Menu, X } from "lucide-react";
 import { Container } from "./Container";
-import { MainNavigation } from "./MainNavigation";
+import { MainNavigation, NAVIGATION_CATEGORIES } from "./MainNavigation";
 import { ThemeToggle } from "./ThemeToggle";
 
 export function SiteHeader() {
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -22,7 +24,8 @@ export function SiteHeader() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery.trim())}`;
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setMobileMenuOpen(false);
     }
   };
 
@@ -81,18 +84,22 @@ export function SiteHeader() {
 
           {/* Center: MetroScope Official Logo */}
           <div className="flex flex-col items-center justify-center text-center">
-            <Link href="/" className="inline-block" aria-label="MetroScope Home">
+            <Link
+              href="/"
+              className="inline-block dark:bg-white/95 dark:px-3.5 dark:py-1.5 dark:rounded-md transition-colors"
+              aria-label="MetroScope Home"
+            >
               <Image
                 src="/logo.png"
-                alt="MetroScope — Automated US & Global News Discovery"
+                alt="MetroScope"
                 width={260}
                 height={60}
                 priority
-                className="h-9 md:h-12 w-auto object-contain dark:brightness-110"
+                className="h-9 md:h-12 w-auto object-contain"
               />
             </Link>
-            <span className="text-[10px] md:text-xs uppercase tracking-widest text-muted mt-1 font-serif hidden sm:block">
-              US & Global News Discovery Network
+            <span className="text-[10px] md:text-xs uppercase tracking-widest text-muted mt-1.5 font-serif hidden sm:block">
+              National &amp; International News
             </span>
           </div>
 
@@ -115,15 +122,14 @@ export function SiteHeader() {
         </div>
       </Container>
 
-      {/* Breaking / Wire Ticker */}
+      {/* Editorial Sub-bar */}
       <div className="w-full bg-metro-navy text-white text-xs py-1.5 overflow-hidden border-y border-metro-navy">
         <Container className="flex items-center space-x-3">
-          <div className="flex items-center space-x-1.5 shrink-0 bg-secondary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white">
-            <Bell className="w-3 h-3 animate-pulse" />
-            <span>Breaking Wire</span>
+          <div className="flex items-center shrink-0 bg-secondary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white">
+            <span>Latest Coverage</span>
           </div>
           <div className="truncate text-gray-200">
-            <span>Automated GDELT discovery pipeline active • Global news metadata normalized in real-time</span>
+            <span>Reporting and summaries from leading national and international newsrooms</span>
           </div>
         </Container>
       </div>
@@ -154,18 +160,7 @@ export function SiteHeader() {
               Sections
             </span>
             <div className="grid grid-cols-2 gap-2">
-              {[
-                { name: "Home", href: "/" },
-                { name: "US News", href: "/category/us-news" },
-                { name: "World", href: "/category/world" },
-                { name: "Technology", href: "/category/technology" },
-                { name: "Business", href: "/category/business" },
-                { name: "Markets", href: "/category/markets" },
-                { name: "Politics", href: "/category/politics" },
-                { name: "Science", href: "/category/science" },
-                { name: "Culture", href: "/category/culture" },
-                { name: "Opinion", href: "/category/opinion" },
-              ].map((item) => (
+              {NAVIGATION_CATEGORIES.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}

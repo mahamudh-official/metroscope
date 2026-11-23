@@ -1,7 +1,20 @@
-import { Container } from "@/components/Container";
-import { constructMetadata, generateNewsArticleJsonLd } from "@/lib/seo";
-import Link from "next/link";
-import { ArrowLeft, Clock, ExternalLink, ShieldCheck } from "lucide-react";
+import React from "react";
+import { notFound } from "next/navigation";
+import { fetchArticleBySlug, fetchRelatedArticles } from "@/lib/api";
+import {
+  constructMetadata,
+  generateNewsArticleJsonLd,
+  generateBreadcrumbJsonLd,
+  safeJsonLd,
+  siteConfig,
+} from "@/lib/seo";
+import { ArticleInteractions } from "@/components/ArticleInteractions";
+import { EDITORIAL_AUTHOR } from "@/lib/attribution";
+import {
+  CanonicalArticleView,
+  resolveCleanSourceName,
+  calculateReadingTime,
+} from "@/components/CanonicalArticleView";
 
 interface ArticlePageProps {
   params: {
@@ -9,109 +22,98 @@ interface ArticlePageProps {
   };
 }
 
-export function generateMetadata({ params }: ArticlePageProps) {
-  const cleanTitle = params.slug.replace(/-/g, " ");
+export const revalidate = 60;
+
+export async function generateMetadata({ params }: ArticlePageProps) {
+  const article = await fetchArticleBySlug(params.slug);
+  if (!article) {
+    return constructMetadata({
+      title: "Article Not Found",
+      description: "The requested article could not be found or is no longer available.",
+      noIndex: true,
+    });
+  }
+
+  const sourceName = resolveCleanSourceName(
+    article.publisher_name,
+    article.source?.name,
+    article.source?.domain,
+    article.title
+  );
+
   return constructMetadata({
-    title: `${cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1)} — Discovered Report`,
-    description: "Detailed news discovery metadata, publisher attribution, and normalized summary.",
+    title: article.title,
+    description: article.description || `Read full coverage and reporting from ${sourceName}.`,
+    image: article.image_url || undefined,
+    canonicalUrl: article.canonical_url,
     type: "article",
   });
 }
 
-export default function ArticlePage({ params }: ArticlePageProps) {
-  const title = params.slug
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
+/**
+ * Canonical MetroScope Article Route.
+ * 
+ * Enforces exactly ONE single article detail template for all published news.
+ * Uses CanonicalArticleView component.
+ */
+export default async function ArticlePage({ params }: ArticlePageProps) {
+  const article = await fetchArticleBySlug(params.slug);
 
-  const publishedAt = new Date().toISOString();
-  const jsonLd = generateNewsArticleJsonLd({
-    headline: title,
-    description: "Normalized news discovery record indexed via GDELT DOC 2.0 API.",
+  if (!article) {
+    notFound();
+  }
+
+  const relatedArticles = await fetchRelatedArticles(article.slug, 5);
+
+  const publishedAt = article.published_at || new Date().toISOString();
+  const canonicalUrl = article.canonical_url;
+  const sourceName = resolveCleanSourceName(
+    article.publisher_name,
+    article.source?.name,
+    article.source?.domain,
+    article.title
+  );
+  const sourceDomain = article.source?.domain || "themetroscope.com";
+  const readingTimeMinutes = calculateReadingTime(article.full_text, article.description);
+
+  const articleJsonLd = generateNewsArticleJsonLd({
+    headline: article.title,
+    description: article.description || `Reporting by ${sourceName}.`,
     datePublished: publishedAt,
-    url: `https://metroscope.news/article/${params.slug}`,
+    dateModified: article.updated_at,
+    authorName: EDITORIAL_AUTHOR,
+    sourceName,
+    sourceDomain,
+    canonicalUrl,
+    url: `${siteConfig.url}/article/${article.slug}`,
   });
 
+  const breadcrumbsJsonLd = generateBreadcrumbJsonLd([
+    { name: "Home", item: "/" },
+    {
+      name: article.category?.name || "News",
+      item: `/category/${article.category?.slug || "us"}`,
+    },
+    { name: article.title, item: `/article/${article.slug}` },
+  ]);
+
   return (
-    <article className="py-8">
-      {/* JSON-LD Structured Data for Search Engines */}
+    <article className="pb-12 sm:pb-16 overflow-hidden break-all">
+      {/* Search Engine Structured Data */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(articleJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbsJsonLd) }}
       />
 
-      <Container className="max-w-4xl space-y-8">
-        <Link
-          href="/"
-          className="inline-flex items-center space-x-1.5 text-xs text-muted hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Front Page</span>
-        </Link>
+      {/* Top Reading Progress Bar (Fixed Top Accent) */}
+      <ArticleInteractions title={article.title} readingTimeMinutes={readingTimeMinutes} />
 
-        {/* Article Masthead */}
-        <header className="space-y-4 border-b border-border pb-6">
-          <div className="flex items-center space-x-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-secondary">
-              Wire Dispatch
-            </span>
-            <span className="text-border">•</span>
-            <span className="text-xs text-muted flex items-center space-x-1">
-              <Clock className="w-3.5 h-3.5" />
-              <span>Indexed {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-            </span>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-foreground leading-tight">
-            {title}
-          </h1>
-
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-2 text-xs text-muted border-t border-border pt-4">
-            <div className="flex items-center space-x-2">
-              <span className="font-semibold text-foreground">Discovery Source:</span>
-              <span className="bg-surface-container px-2 py-0.5 rounded text-foreground font-mono">
-                GDELT Indexing Engine
-              </span>
-            </div>
-            <div className="flex items-center space-x-1.5 text-secondary">
-              <ShieldCheck className="w-4 h-4" />
-              <span className="font-semibold">Publisher Attribution Verified</span>
-            </div>
-          </div>
-        </header>
-
-        {/* Publisher Notice & Copyright Safeguard */}
-        <div className="p-4 rounded-lg bg-surface-low border border-border text-xs text-muted space-y-2">
-          <p className="font-semibold text-foreground">Publisher Attribution Notice</p>
-          <p>
-            MetroScope indexes and normalizes publicly accessible news metadata via the GDELT Project. To read the complete investigative reporting, please visit the original publishing entity directly.
-          </p>
-          <div className="pt-1">
-            <a
-              href="https://www.gdeltproject.org/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center space-x-1 text-secondary font-semibold hover:underline"
-            >
-              <span>Visit Original Source Record</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-        </div>
-
-        {/* Article Body Content */}
-        <section className="prose dark:prose-invert max-w-none text-foreground font-sans leading-relaxed space-y-4 text-base">
-          <p className="text-lg font-serif italic text-muted leading-relaxed">
-            This normalized article view represents the Phase 1 architectural preview for the MetroScope news discovery platform.
-          </p>
-          <p>
-            The production news pipeline utilizes Python-based asynchronous workers running APScheduler to poll GDELT DOC 2.0 API endpoints at structured intervals. Upon ingestion, news items are normalized, checked for duplicate canonical URLs, and persisted to PostgreSQL.
-          </p>
-          <p>
-            In accordance with copyright best practices and GDELT terms, MetroScope stores and displays factual article metadata, headlines, publication dates, and synthesized summaries while linking readers to original publishers for full articles.
-          </p>
-        </section>
-      </Container>
+      {/* Single Canonical Article Template */}
+      <CanonicalArticleView article={article} relatedArticles={relatedArticles} />
     </article>
   );
 }

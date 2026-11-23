@@ -3,18 +3,55 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { Mail, CheckCircle } from "lucide-react";
+import { Mail, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { Container } from "./Container";
 import { NAVIGATION_CATEGORIES } from "./MainNavigation";
+import { subscribeToNewsletter } from "@/lib/api";
 
 export function SiteFooter() {
   const [email, setEmail] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionState, setSubmissionState] = useState<{
+    status: "idle" | "verification_sent" | "already_subscribed" | "error";
+    message: string;
+  }>({ status: "idle", message: "" });
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim()) {
-      setSubscribed(true);
+    const cleanEmail = email.trim();
+    if (!cleanEmail || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setSubmissionState({ status: "idle", message: "" });
+
+    try {
+      const res = await subscribeToNewsletter(cleanEmail);
+      if (res.success) {
+        if (res.status === "already_subscribed") {
+          setSubmissionState({
+            status: "already_subscribed",
+            message: res.message || "This email is already subscribed to MetroScope News.",
+          });
+        } else {
+          setSubmissionState({
+            status: "verification_sent",
+            message: res.message || "Please check your inbox to confirm your subscription.",
+          });
+          setEmail("");
+        }
+      } else {
+        setSubmissionState({
+          status: "error",
+          message: res.message || "Unable to process subscription. Please check your email and try again.",
+        });
+      }
+    } catch {
+      setSubmissionState({
+        status: "error",
+        message: "An unexpected network error occurred. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -41,11 +78,29 @@ export function SiteFooter() {
             </div>
 
             <div>
-              {subscribed ? (
-                <div className="bg-secondary/20 border border-secondary p-4 rounded text-center">
-                  <CheckCircle className="w-6 h-6 text-secondary mx-auto mb-2" />
-                  <p className="text-sm font-semibold text-white">Thank you for subscribing!</p>
-                  <p className="text-xs text-gray-300 mt-1">You will receive the next edition of The Morning Scope.</p>
+              {submissionState.status === "verification_sent" ? (
+                <div className="bg-secondary/20 border border-secondary p-5 rounded-lg text-center">
+                  <CheckCircle className="w-8 h-8 text-secondary mx-auto mb-2" />
+                  <p className="text-sm font-bold text-white">Check Your Inbox</p>
+                  <p className="text-xs text-gray-200 mt-1">{submissionState.message}</p>
+                  <button
+                    onClick={() => setSubmissionState({ status: "idle", message: "" })}
+                    className="mt-3 text-xs text-secondary hover:underline"
+                  >
+                    Subscribe another email
+                  </button>
+                </div>
+              ) : submissionState.status === "already_subscribed" ? (
+                <div className="bg-white/10 border border-white/20 p-5 rounded-lg text-center">
+                  <CheckCircle className="w-8 h-8 text-secondary mx-auto mb-2" />
+                  <p className="text-sm font-bold text-white">Already Subscribed</p>
+                  <p className="text-xs text-gray-300 mt-1">{submissionState.message}</p>
+                  <button
+                    onClick={() => setSubmissionState({ status: "idle", message: "" })}
+                    className="mt-3 text-xs text-secondary hover:underline"
+                  >
+                    Back to form
+                  </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubscribe} className="space-y-3">
@@ -54,20 +109,35 @@ export function SiteFooter() {
                       <input
                         type="email"
                         required
+                        disabled={isSubmitting}
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="Enter your email address"
-                        className="w-full pl-9 pr-3 py-2.5 text-sm rounded bg-white/10 text-white placeholder:text-gray-400 border border-white/20 focus:outline-none focus:border-secondary"
+                        className="w-full pl-9 pr-3 py-2.5 text-sm rounded bg-white/10 text-white placeholder:text-gray-400 border border-white/20 focus:outline-none focus:border-secondary disabled:opacity-50"
                       />
                       <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-3 pointer-events-none" />
                     </div>
                     <button
                       type="submit"
-                      className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded bg-secondary text-white hover:bg-secondary/90 transition-colors whitespace-nowrap"
+                      disabled={isSubmitting}
+                      className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded bg-secondary text-white hover:bg-secondary/90 transition-colors whitespace-nowrap flex items-center justify-center gap-1.5 disabled:opacity-60"
                     >
-                      Subscribe
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          <span>Sending...</span>
+                        </>
+                      ) : (
+                        <span>Subscribe</span>
+                      )}
                     </button>
                   </div>
+                  {submissionState.status === "error" && (
+                    <div className="flex items-center gap-1.5 text-xs text-red-400 bg-red-950/30 border border-red-800/40 px-3 py-2 rounded">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{submissionState.message}</span>
+                    </div>
+                  )}
                   <p className="text-[11px] text-gray-400">
                     By subscribing, you agree to our <Link href="/privacy" className="underline hover:text-white">Privacy Policy</Link> and <Link href="/terms" className="underline hover:text-white">Terms of Service</Link>.
                   </p>
@@ -83,20 +153,20 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand Info */}
           <div className="space-y-4 md:col-span-1">
-            <Link href="/" className="inline-block">
+            <Link href="/" className="inline-block bg-white/95 px-3 py-1.5 rounded-md">
               <Image
                 src="/logo.png"
                 alt="MetroScope"
                 width={200}
                 height={50}
-                className="h-8 w-auto brightness-200"
+                className="h-8 w-auto object-contain"
               />
             </Link>
             <p className="text-xs text-gray-300 leading-relaxed">
-              MetroScope is an automated, US-focused global news discovery platform. Delivering unbiased, verified intelligence powered by real-time GDELT data aggregation.
+              MetroScope is a US-focused digital news publication presenting curated headlines, permitted summaries, and direct attribution to original reporting across national and international newsrooms.
             </p>
             <div className="text-[11px] text-gray-400">
-              <span>Primary Discovery: GDELT DOC 2.0 API</span>
+              <span>National &amp; International Coverage</span>
             </div>
           </div>
 
@@ -170,7 +240,7 @@ export function SiteFooter() {
         <div className="border-t border-white/10 mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-4">
           <p>© {new Date().getFullYear()} MetroScope News Network. All rights reserved.</p>
           <p className="text-[11px] text-gray-500">
-            News discovery metadata indexed from GDELT Project. Original publisher copyrights acknowledged.
+            Original publisher copyrights acknowledged. Fair use news discovery and indexing service.
           </p>
         </div>
       </Container>

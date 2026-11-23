@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MetroScope — Minimal Photo Card</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: #e9edf1; }
+  body { display: grid; place-items: center; padding: 24px; font-family: "DM Sans", Arial, sans-serif; }
+  .card {
+    width: min( min(1080px, calc(100vw - 48px)), calc(100vh - 48px));
+    aspect-ratio: 1;
+    position: relative;
+    overflow: hidden;
+    background: #101820;
+    color: #fff;
+    box-shadow: 0 28px 80px rgba(15, 23, 42, .22);
+  }
+  .photo {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 65% 30%, rgba(237, 75, 67, 0.22) 0%, rgba(16, 24, 32, 0) 55%),
+      linear-gradient(180deg, #18222e 0%, #101820 60%, #0a0f14 100%);
+    transform: scale(1.01);
+  }
+  .top {
+    position: absolute; z-index: 1; top: 5.4%; left: 6%; right: 6%;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .brand { font: 800 clamp(18px, 3.15vw, 34px)/1 "Manrope", sans-serif; letter-spacing: -.055em; }
+  .brand span { color: #ed4b43; }
+  .edition { font-size: clamp(9px, 1.05vw, 13px); letter-spacing: .16em; text-transform: uppercase; font-weight: 700; color: rgba(255,255,255,.88); }
+  .content { position: absolute; z-index: 1; left: 6%; right: 6%; bottom: 7.2%; }
+  .category {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-size: clamp(10px, 1.15vw, 14px); font-weight: 700;
+    text-transform: uppercase; letter-spacing: .16em; color: #fff;
+    margin-bottom: 2.2%;
+  }
+  .category:before { content: ""; width: 22px; height: 3px; background: #ed4b43; display: block; }
+  h1 {
+    max-width: 91%; margin: 0;
+    font: 700 clamp(31px, 5.1vw, 58px)/1.08 "Manrope", sans-serif;
+    letter-spacing: -.052em;
+    text-wrap: balance;
+  }
+  h1.headline-long {
+    font: 700 clamp(26px, 4.3vw, 48px)/1.10 "Manrope", sans-serif;
+    letter-spacing: -.048em;
+  }
+  h1.headline-xlong {
+    font: 700 clamp(22px, 3.6vw, 40px)/1.12 "Manrope", sans-serif;
+    letter-spacing: -.044em;
+  }
+  .bottom {
+    display: flex; justify-content: space-between; align-items: end;
+    margin-top: 4.4%; padding-top: 2.4%;
+    border-top: 1px solid rgba(255,255,255,.28);
+  }
+  .date { color: rgba(255,255,255,.72); font-size: clamp(10px, 1.15vw, 14px); font-weight: 500; letter-spacing: .04em; }
+  .site { font: 700 clamp(11px, 1.25vw, 15px)/1 "Manrope", sans-serif; letter-spacing: -.02em; }
+  @media (min-width: 1081px) { .card { width: 1080px; } }
+  @media (min-width: 1080px) and (min-height: 1080px) {
+    body.canvas-fixed { padding: 0; margin: 0; background: #101820; }
+    body.canvas-fixed .card { width: 1080px; height: 1080px; box-shadow: none; }
+  }
+</style>
+</head>
+<body class="">
+  <main class="card" role="img" aria-label="MetroScope minimal editorial photo card">
+    <div class="photo"></div>
+    <header class="top">
+      <div class="brand">metro<span>scope</span></div>
+      <div class="edition">The latest, in focus</div>
+    </header>
+    <section class="content">
+      <div class="category">Environment</div>
+      <h1 class="headline-long">Global Climate Accord Reaches Critical Implementation Milestone Across Developing Economies</h1>
+      <footer class="bottom">
+        <div class="date">NOVEMBER 17, 2026</div>
+        <div class="site">METROSCOPE.NEWS</div>
+      </footer>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,233 @@
+Total articles in DB: 21
+
+=== Article ID 1 ===
+Title:         قیمت فروش دلار در مرکز مبادله ایران ۱۹۱ هزار و ۷۰۸ تومان است
+Status:        published (Filter: None)
+Category:      business
+Domain:        irib-news.ir
+Publisher:     خبرگزاری صدا و سیما | IRIB NEWS AGENCY
+Author:        None
+Desc (len 0): ''
+FullText (len 387): Authorized=False
+URL:           https://www.irib-news.ir/fa/news/5965820/قیمت-فروش-دلار-در-مرکز-مبادله-ایران-191-هزار-و-708-تومان-است
+------------------------------------------------------------
+=== Article ID 2 ===
+Title:         ¿Qué motivó al representante de la delegación agrícola estadounidense a exclamar "¡increíble!" en una fábrica de productos lácteos vietnamita?
+Status:        published (Filter: None)
+Category:      business
+Domain:        vietnam.vn
+Publisher:     Vietnam.vn
+Author:        None
+Desc (len 233): '"Increíble" es la frase que Mark Slupek, subdirector del Servicio Agrícola Exterior, utilizó para de'
+FullText (len 1447): Authorized=False
+URL:           https://www.vietnam.vn/es/dieu-gi-khien-dai-dien-phai-doan-nong-nghiep-hoa-ky-thot-len-dang-kinh-ngac-tai-mot-nha-may-sua-viet-nam
+------------------------------------------------------------
+=== Article ID 3 ===
+Title:         加州教師工會籲公立國中小暫停導入 AI 三年
+Status:        published (Filter: None)
+Category:      technology
+Domain:        n.yam.com
+Publisher:     蕃新聞
+Author:        None
+Desc (len 0): ''
+FullText (len 746): Authorized=False
+URL:           https://n.yam.com/Article/20261114425547
+------------------------------------------------------------
+=== Article ID 4 ===
+Title:         Forging Trust: Building Secure International Gold Trading Partnerships
+Status:        filtered (Filter: Domain is identified as spam or scraper network)
+Category:      world
+Domain:        buildingsecureinternatio763393.alltdesign.com
+Publisher:     None
+Author:        None
+Desc (len 379): 'Historically , the complex nature of cross-border transactions in precious metals has resulted in op'
+FullText (len 3439): Authorized=False
+URL:           https://buildingsecureinternatio763393.alltdesign.com/forging-trust-building-secure-international-gold-trading-partnerships-62622899
+------------------------------------------------------------
+=== Article ID 5 ===
+Title:         The Cost Difference Between One-Story and Multi-Story Commercial Builds
+Status:        filtered (Filter: Domain is identified as spam or scraper network)
+Category:      business
+Domain:        sherwoodparktopcommercia406907.alltdesign.com
+Publisher:     None
+Author:        None
+Desc (len 360): 'The following paragraphs detail how Sherwood Park top Commercial Construction services proceed, toda'
+FullText (len 10278): Authorized=False
+URL:           https://sherwoodparktopcommercia406907.alltdesign.com/the-cost-difference-between-one-story-and-multi-story-commercial-builds-62622894
+------------------------------------------------------------
+=== Article ID 6 ===
+Title:         Pottsville, Schuylkill Technology Center Partnership to Restore Blighted Property and Employ Students
+Status:        published (Filter: None)
+Category:      technology
+Domain:        skooknews.com
+Publisher:     Skook News
+Author:        None
+Desc (len 343): 'Developers must provide a business plan outlining how they would take the property from its current '
+FullText (len 4154): Authorized=False
+URL:           https://www.skooknews.com/2026/11/pottsville-schuylkill-technology-center.html
+------------------------------------------------------------
+=== Article ID 7 ===
+Title:         Kazakhstan unveils over 32 billion tenge in green projects at COP31
+Status:        published (Filter: None)
+Category:      business
+Domain:        qazinform.com
+Publisher:     Qazinform
+Author:        Nariman Mergalym
+Desc (len 401): 'With an investment of 11.95 billion tenge, the plant will recover valuable materials from spent batt'
+FullText (len 4085): Authorized=False
+URL:           https://qazinform.com/news/kazakhstan-unveils-over-32-billion-tenge-in-green-projects-at-cop31-404431
+------------------------------------------------------------
+=== Article ID 8 ===
+Title:         Edwards Lifesciences management to meet virtually with Oppenheimer
+Status:        filtered (Filter: Body contains cookie, paywall, error, or navigation boilerplate)
+Category:      business
+Domain:        markets.businessinsider.com
+Publisher:     Business Insider
+Author:        None
+Desc (len 0): ''
+FullText (len 209): Authorized=False
+URL:           https://markets.businessinsider.com/news/stocks/edwards-lifesciences-management-to-meet-virtually-with-oppenheimer-1036764033
+------------------------------------------------------------
+=== Article ID 9 ===
+Title:         L'Allemagne risque-t‑elle un hiver rigoureux? La ministre de l'Économie Reiche mise en urgence sur les centrales au charbon et au fioul
+Status:        published (Filter: None)
+Category:      world
+Domain:        weltwoche.ch
+Publisher:     Die Weltwoche
+Author:        None
+Desc (len 349): 'Les installations se trouvent dans ce que l’on appelle une réserve froide: elles sont hors service, '
+FullText (len 2439): Authorized=False
+URL:           https://weltwoche.ch/fr/daily/lallemagne-risque-t%e2%80%91elle-un-hiver-rigoureux-la-ministre-de-leconomie-reiche-mise-en-urgence-sur-les-centrales-au-charbon-et-au-fioul
+------------------------------------------------------------
+=== Article ID 10 ===
+Title:         Walmart management to meet virtually with Oppenheimer
+Status:        filtered (Filter: Body contains cookie, paywall, error, or navigation boilerplate)
+Category:      business
+Domain:        markets.businessinsider.com
+Publisher:     Business Insider
+Author:        None
+Desc (len 0): ''
+FullText (len 199): Authorized=False
+URL:           https://markets.businessinsider.com/news/stocks/walmart-management-to-meet-virtually-with-oppenheimer-1036764030
+------------------------------------------------------------
+=== Article ID 34 ===
+Title:         NASA Mars Rover Discovers Evidence of Ancient River System
+Status:        published (Filter: None)
+Category:      science
+Domain:        nasa.gov
+Publisher:     NASA
+Author:        Dr. Sarah Johnson
+Desc (len 104): 'Perseverance rover identifies geological sediment layers indicating past surface water in Jezero Cra'
+FullText (len 582): Authorized=True
+URL:           https://www.nasa.gov/news/mars-river-system-2026
+------------------------------------------------------------
+=== Article ID 35 ===
+Title:         Top 10 Real Money Online Casinos for November
+Status:        published (Filter: None)
+Category:      business
+Domain:        ou.ac.lk
+Publisher:     The Open University of Sri Lanka – Open and Distance Learning : learning opportunities to anyone, anywhere, and at any time.
+Author:        None
+Desc (len 285): 'Once you’ve established that you can legally get your hands on the latest casino free spins and bonu'
+FullText (len 5294): Authorized=False
+URL:           https://ou.ac.lk/top-10-real-money-online-casinos-for-november-2
+------------------------------------------------------------
+=== Article ID 36 ===
+Title:         Best Online Casinos in Canada Top 10+ Casino Sites 2026
+Status:        published (Filter: None)
+Category:      world
+Domain:        ou.ac.lk
+Publisher:     The Open University of Sri Lanka – Open and Distance Learning : learning opportunities to anyone, anywhere, and at any time.
+Author:        None
+Desc (len 302): 'Jackpot City is a top choice for slot enthusiasts, offering an outstanding selection that is regular'
+FullText (len 5422): Authorized=False
+URL:           https://ou.ac.lk/best-online-casinos-in-canada-top-10-casino-sites-2026
+------------------------------------------------------------
+=== Article ID 37 ===
+Title:         Serbia opens its oil reserves to NIS: company to receive 66,000 tonnes
+Status:        published (Filter: None)
+Category:      business
+Domain:        fakti.bg
+Publisher:     Новини от днес и последния час | ФАКТИ.БГ
+Author:        Denis Dzhambazov
+Desc (len 310): 'The decision aims to ensure the operation of the Pančevo refinery and uninterrupted supplies to the '
+FullText (len 2008): Authorized=False
+URL:           https://fakti.bg/en/world/1100861-serbia-opens-its-oil-reserves-to-nis-company-to-receive-66000-tonnes
+------------------------------------------------------------
+=== Article ID 38 ===
+Title:         Microsoft anuncia el restablecimiento total de su servicio tras la caída técnica
+Status:        published (Filter: None)
+Category:      technology
+Domain:        elmostrador.cl
+Publisher:     El Mostrador
+Author:        EFE
+Desc (len 311): 'Síntesis generada con OpenAI Microsoft confirmó este sábado la restauración total de sus servicios e'
+FullText (len 2383): Authorized=False
+URL:           https://www.elmostrador.cl/noticias/mundo/2026/11/14/microsoft-anuncia-el-restablecimiento-total-de-su-servicio-tras-la-caida-tecnica
+------------------------------------------------------------
+=== Article ID 39 ===
+Title:         Едва заметный импорт: кто и зачем привозит в Россию 30-летние автомобили
+Status:        published (Filter: None)
+Category:      business
+Domain:        regions.ru
+Publisher:     Новости Московской области сегодня: самые свежие, актуальные и последние новости и события в Москве и Подмосковье
+Author:        Юрий Гасанов
+Desc (len 0): ''
+FullText (len 773): Authorized=False
+URL:           https://regions.ru/transport/edva-zametnyj-import-kto-i-zachem-privozit-v-rossiju-30-letnie-avtomobili
+------------------------------------------------------------
+=== Article ID 40 ===
+Title:         共築發展新格局 第五屆海峽兩岸社會辦醫發展峰會在廣州增城舉行 - 香港商報
+Status:        published (Filter: None)
+Category:      business
+Domain:        hkcd.com.hk
+Publisher:     hkcd.com.hk
+Author:        None
+Desc (len 0): ''
+FullText (len 2125): Authorized=False
+URL:           https://www.hkcd.com.hk/hkcdweb/content/2026/11/14/content_8785365.html
+------------------------------------------------------------
+=== Article ID 41 ===
+Title:         La rete ferroviaria registra il tasso di mortalità più basso d'Europa
+Status:        published (Filter: None)
+Category:      business
+Domain:        theportugalnews.com
+Publisher:     Theportugalnews
+Author:        None
+Desc (len 389): 'Il tasso era inferiore alla metà di quello della Spagna e pari a circa un terzo di quello della Germ'
+FullText (len 984): Authorized=False
+URL:           https://www.theportugalnews.com/it/notizia/2026-11-14/la-rete-ferroviaria-registra-il-tasso-di-mortalita-piu-basso-deuropa/1116401
+------------------------------------------------------------
+=== Article ID 42 ===
+Title:         SecureSpend: Your Money, Your Rules
+Status:        filtered (Filter: Domain is identified as spam or scraper network)
+Category:      business
+Domain:        securespend411793.alltdesign.com
+Publisher:     None
+Author:        None
+Desc (len 298): 'SecureSpend allows you to create custom budgets, track your expenses with ease, and automate payment'
+FullText (len 3412): Authorized=False
+URL:           https://securespend411793.alltdesign.com/securespend-your-money-your-rules-62627558
+------------------------------------------------------------
+=== Article ID 43 ===
+Title:         Tama Home to Pull Out of Insurance Agency Biz over Fraud Scandal
+Status:        published (Filter: None)
+Category:      business
+Domain:        english.adnkronos.com
+Publisher:     News in tempo reale, ultime notizie e video | Adnkronos
+Author:        Redazione
+Desc (len 393): 'The homebuilder is considering a plan for outside experts to conduct an investigation into the fraud'
+FullText (len 1446): Authorized=False
+URL:           https://english.adnkronos.com/2026/11/14/tama-home-to-pull-out-of-insurance-agency-biz-over-fraud-scandal
+------------------------------------------------------------
+=== Article ID 44 ===
+Title:         Best Online Casino Sites in Canada November 2026
+Status:        published (Filter: None)
+Category:      world
+Domain:        ou.ac.lk
+Publisher:     The Open University of Sri Lanka – Open and Distance Learning : learning opportunities to anyone, anywhere, and at any time.
+Author:        None
+Desc (len 399): 'Other top slots include Sweet Bonanza, Gonzo’s Quest Megaways and a selection of Cash Eruption title'
+FullText (len 4169): Authorized=False
+URL:           https://ou.ac.lk/best-online-casino-sites-in-canada-november-2026
+------------------------------------------------------------

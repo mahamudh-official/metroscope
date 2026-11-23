@@ -14,14 +14,21 @@ connect_args = {}
 if "asyncpg" in settings.async_database_url:
     connect_args["timeout"] = 2.0
 
+engine_kwargs = {
+    "echo": False,
+    "connect_args": connect_args,
+}
+if "sqlite" not in settings.async_database_url:
+    engine_kwargs.update({
+        "pool_size": 5,
+        "max_overflow": 5,
+        "pool_pre_ping": True,
+        "pool_recycle": 1800,
+    })
+
 async_engine = create_async_engine(
     settings.async_database_url,
-    echo=False,
-    pool_size=5,
-    max_overflow=5,
-    pool_pre_ping=True,
-    pool_recycle=1800,
-    connect_args=connect_args,
+    **engine_kwargs,
 )
 
 async_session_factory = async_sessionmaker(
@@ -52,13 +59,16 @@ async def check_db_connection(timeout_seconds: float = 1.5) -> bool:
     when the database is offline or socket access is blocked.
     """
     try:
-        server = settings.POSTGRES_SERVER
-        port = settings.POSTGRES_PORT
-        try:
-            with socket.create_connection((server, port), timeout=0.3):
-                pass
-        except OSError:
-            return False
+        # Fast socket pre-flight check based on parsed engine URL (PostgreSQL only)
+        db_url = async_engine.url
+        if "sqlite" not in db_url.drivername:
+            server = db_url.host or "127.0.0.1"
+            port = db_url.port or 5432
+            try:
+                with socket.create_connection((server, port), timeout=0.3):
+                    pass
+            except OSError:
+                return False
 
         async def _ping() -> bool:
             async with async_engine.connect() as conn:

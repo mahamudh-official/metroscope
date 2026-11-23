@@ -1,9 +1,11 @@
 import { Container } from "@/components/Container";
 import { constructMetadata } from "@/lib/seo";
+import Link from "next/link";
 
 export const metadata = constructMetadata({
   title: "Privacy Policy",
   description: "MetroScope Privacy Policy regarding news discovery data, cookies, and user privacy rights.",
+  canonicalUrl: "/privacy",
 });
 
 export default function PrivacyPage() {
@@ -48,9 +50,9 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-lg font-serif font-bold text-foreground">4. Contact Information</h2>
+          <h2 className="text-lg font-serif font-bold text-foreground">4. Contact &amp; Privacy Requests</h2>
           <p className="text-muted">
-            If you have questions regarding this Privacy Policy, please contact our data compliance desk at <a href="mailto:privacy@metroscope.news" className="text-secondary underline">privacy@metroscope.news</a>.
+            For privacy inquiries regarding subscriber data or email preference removal, readers may use the direct one-click unsubscribe link provided in every newsletter dispatch or visit our self-service <Link href="/unsubscribe" className="text-secondary underline font-semibold">Unsubscribe Portal</Link>. Inquiries regarding publisher exclusion or platform indexing may be directed via our <Link href="/contact" className="text-secondary underline font-semibold">Contact &amp; Attribution</Link> guidelines.
           </p>
         </section>
       </div>

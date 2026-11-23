@@ -20,6 +20,7 @@ RUN npm run build
 
 # Stage 3: Runner (Optimized for 2GB RAM production constraint)
 FROM node:20-alpine AS runner
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 ENV NODE_ENV=production

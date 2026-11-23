@@ -1,0 +1,253 @@
+name: metroscope-prod
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: metroscope-db
+    restart: unless-stopped
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c work_mem=4MB
+      -c maintenance_work_mem=32MB
+      -c effective_cache_size=256MB
+      -c max_connections=50
+      -c synchronous_commit=on
+      -c checkpoint_completion_target=0.9
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-metroscope}
+      POSTGRES_USER: ${POSTGRES_USER:-metroscope_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-metroscope_user} -d ${POSTGRES_DB:-metroscope}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: "0.80"
+        reservations:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - metroscope_net
+
+  backend:
+    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-metroscope}/backend:${IMAGE_TAG:-latest}
+    container_name: metroscope-backend
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      DEBUG: "false"
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      PROJECT_NAME: MetroScope
+      API_V1_STR: /api/v1
+      BACKEND_HOST: 0.0.0.0
+      BACKEND_PORT: 8000
+      POSTGRES_SERVER: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-metroscope}
+      POSTGRES_USER: ${POSTGRES_USER:-metroscope_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-metroscope_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-metroscope}
+      DATABASE_SYNC_URL: postgresql://${POSTGRES_USER:-metroscope_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-metroscope}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-["themetroscope.com","www.themetroscope.com","api.themetroscope.com","metroscope.news","www.metroscope.news","backend","localhost","127.0.0.1"]}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["https://themetroscope.com","https://www.themetroscope.com","https://api.themetroscope.com","https://metroscope.news","https://www.metroscope.news"]}
+      SITE_URL: ${SITE_URL:-https://themetroscope.com}
+      WORKER_ENABLED: "false"
+      EMAIL_DRY_RUN: ${EMAIL_DRY_RUN:-true}
+      SMTP_HOST: ${SMTP_HOST:-localhost}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-newsletter@themetroscope.com}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-MetroScope News}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-15.0}
+      SUBSCRIPTION_RATE_LIMIT_PER_HOUR: ${SUBSCRIPTION_RATE_LIMIT_PER_HOUR:-5}
+      VERIFICATION_TOKEN_EXPIRE_HOURS: ${VERIFICATION_TOKEN_EXPIRE_HOURS:-24}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: "0.80"
+        reservations:
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - metroscope_net
+
+  worker:
+    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-metroscope}/worker:${IMAGE_TAG:-latest}
+    container_name: metroscope-worker
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      POSTGRES_SERVER: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-metroscope}
+      POSTGRES_USER: ${POSTGRES_USER:-metroscope_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-metroscope_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-metroscope}
+      WEBZ_IO_API_KEY: ${WEBZ_IO_API_KEY}
+      WEBZ_IO_BASE_URL: ${WEBZ_IO_BASE_URL:-https://api.webz.io}
+      WEBZ_IO_ENDPOINT: ${WEBZ_IO_ENDPOINT:-/newsApiLite}
+      WEBZ_IO_COLLECTION_ENABLED: ${WEBZ_IO_COLLECTION_ENABLED:-true}
+      WEBZ_IO_TIMEZONE: ${WEBZ_IO_TIMEZONE:-Asia/Dhaka}
+      WORKER_ENABLED: ${WORKER_ENABLED:-true}
+      SITE_URL: ${SITE_URL:-https://themetroscope.com}
+      SOCIAL_PUBLISHING_ENABLED: ${SOCIAL_PUBLISHING_ENABLED:-false}
+      SOCIAL_DRY_RUN: ${SOCIAL_DRY_RUN:-true}
+      SOCIAL_PUBLISHING_INTERVAL_MINUTES: ${SOCIAL_PUBLISHING_INTERVAL_MINUTES:-30}
+      SOCIAL_MAX_POSTS_PER_RUN: ${SOCIAL_MAX_POSTS_PER_RUN:-2}
+      SOCIAL_MIN_QUALITY_SCORE: ${SOCIAL_MIN_QUALITY_SCORE:-70.0}
+      STALE_PUBLISHING_TIMEOUT_MINUTES: ${STALE_PUBLISHING_TIMEOUT_MINUTES:-60}
+      FACEBOOK_ENABLED: ${FACEBOOK_ENABLED:-false}
+      FACEBOOK_PAGE_ID: ${FACEBOOK_PAGE_ID:-}
+      FACEBOOK_PAGE_ACCESS_TOKEN: ${FACEBOOK_PAGE_ACCESS_TOKEN:-}
+      FACEBOOK_API_VERSION: ${FACEBOOK_API_VERSION:-v21.0}
+      FACEBOOK_MAX_POSTS_PER_DAY: ${FACEBOOK_MAX_POSTS_PER_DAY:-48}
+      X_ENABLED: ${X_ENABLED:-false}
+      X_API_KEY: ${X_API_KEY:-}
+      X_API_SECRET: ${X_API_SECRET:-}
+      X_ACCESS_TOKEN: ${X_ACCESS_TOKEN:-}
+      X_ACCESS_TOKEN_SECRET: ${X_ACCESS_TOKEN_SECRET:-}
+      X_BEARER_TOKEN: ${X_BEARER_TOKEN:-}
+      X_MAX_POSTS_PER_DAY: ${X_MAX_POSTS_PER_DAY:-15}
+      EMAIL_DRY_RUN: ${EMAIL_DRY_RUN:-true}
+      SMTP_HOST: ${SMTP_HOST:-localhost}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-newsletter@themetroscope.com}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-MetroScope News}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-15.0}
+      NEWSLETTER_SCHEDULE_HOUR: ${NEWSLETTER_SCHEDULE_HOUR:-6}
+      NEWSLETTER_SCHEDULE_MINUTE: ${NEWSLETTER_SCHEDULE_MINUTE:-0}
+      NEWSLETTER_MIN_QUALITY_SCORE: ${NEWSLETTER_MIN_QUALITY_SCORE:-70.0}
+      NEWSLETTER_MAX_ARTICLES: ${NEWSLETTER_MAX_ARTICLES:-5}
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.50"
+        reservations:
+          memory: 96M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - metroscope_net
+
+  frontend:
+    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-metroscope}/frontend:${IMAGE_TAG:-latest}
+    container_name: metroscope-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: "0.0.0.0"
+      NEXT_PUBLIC_APP_NAME: MetroScope
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://themetroscope.com}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://themetroscope.com/api/v1}
+      INTERNAL_API_URL: http://backend:8000/api/v1
+    depends_on:
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.60"
+        reservations:
+          memory: 96M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - metroscope_net
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: metroscope-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./infrastructure/nginx/certbot/conf:/etc/letsencrypt:ro
+      - ./infrastructure/nginx/certbot/www:/var/www/certbot:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.30"
+        reservations:
+          memory: 32M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - metroscope_net
+
+networks:
+  metroscope_net:
+    name: metroscope_prod_net
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: metroscope_prod_postgres_data
+    driver: local

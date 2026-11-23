@@ -1,4 +1,10 @@
-# OS files
+# Database runtime & local logs
+.postgres_runtime/
+.postgres_phase9_val/
+.postgres_*/
+.pids/
+logs/
+*.log
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -56,6 +62,14 @@ ENV/
 *.sqlite3
 *.db
 pgdata/
+backups/
+*.dump
+*.sql.bak
+
+# Local review bundles
+metroscope_review_*.txt
+.screenshotone_rotation_state
+backend/.screenshotone_rotation_state
 
 # IDE & Editors
 .idea/

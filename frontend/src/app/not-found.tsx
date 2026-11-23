@@ -15,11 +15,11 @@ export default function NotFound() {
         </span>
 
         <h1 className="text-4xl sm:text-5xl font-serif font-bold text-foreground">
-          Editorial Record Not Found
+          Page Not Found
         </h1>
 
         <p className="text-sm text-muted leading-relaxed">
-          The news dispatch, desk section, or archive record you requested is no longer available, has moved, or was indexed under a different locator.
+          The article or section you requested could not be found. It may have been moved or is no longer available.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">

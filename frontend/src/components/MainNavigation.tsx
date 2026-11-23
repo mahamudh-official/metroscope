@@ -6,15 +6,16 @@ import { cn } from "@/lib/utils";
 
 export const NAVIGATION_CATEGORIES = [
   { name: "Home", slug: "", href: "/" },
-  { name: "US News", slug: "us-news", href: "/category/us-news" },
+  { name: "US", slug: "us", href: "/category/us" },
   { name: "World", slug: "world", href: "/category/world" },
-  { name: "Technology", slug: "technology", href: "/category/technology" },
-  { name: "Business", slug: "business", href: "/category/business" },
-  { name: "Markets", slug: "markets", href: "/category/markets" },
   { name: "Politics", slug: "politics", href: "/category/politics" },
+  { name: "Business", slug: "business", href: "/category/business" },
+  { name: "Technology", slug: "technology", href: "/category/technology" },
   { name: "Science", slug: "science", href: "/category/science" },
-  { name: "Culture", slug: "culture", href: "/category/culture" },
-  { name: "Opinion", slug: "opinion", href: "/category/opinion" },
+  { name: "Health", slug: "health", href: "/category/health" },
+  { name: "Environment", slug: "environment", href: "/category/environment" },
+  { name: "Sports", slug: "sports", href: "/category/sports" },
+  { name: "Entertainment", slug: "entertainment", href: "/category/entertainment" },
 ];
 
 export function MainNavigation({ className }: { className?: string }) {

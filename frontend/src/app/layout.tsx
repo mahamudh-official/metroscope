@@ -4,7 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { constructMetadata } from "@/lib/seo";
+import { constructMetadata, generateOrganizationJsonLd, safeJsonLd } from "@/lib/seo";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -28,6 +28,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${playfair.variable}`}>
       <body className="min-h-screen flex flex-col bg-background text-foreground selection:bg-secondary/20 selection:text-secondary">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: safeJsonLd(generateOrganizationJsonLd()),
+          }}
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

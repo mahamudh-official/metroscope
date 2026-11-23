@@ -4,6 +4,7 @@ import { constructMetadata } from "@/lib/seo";
 export const metadata = constructMetadata({
   title: "Terms & Conditions",
   description: "MetroScope Terms & Conditions governing discovery services, copyright, and platform usage.",
+  canonicalUrl: "/terms",
 });
 
 export default function TermsPage() {
@@ -32,7 +33,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-lg font-serif font-bold text-foreground">2. Nature of Service & News Discovery</h2>
           <p className="text-muted">
-            MetroScope is an automated news discovery and aggregation platform that queries open news data sources, primarily the GDELT DOC 2.0 API. MetroScope indexes public article metadata, headlines, publication times, and source references. MetroScope is not a primary publisher of third-party investigative works.
+            MetroScope is an automated news discovery and aggregation platform that queries public news feeds, syndicated wire releases, and open news discovery indexes. MetroScope indexes public article metadata, headlines, publication times, and source references. MetroScope is not a primary publisher of third-party investigative works.
           </p>
         </section>
 

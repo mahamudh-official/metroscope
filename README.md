@@ -2,7 +2,7 @@
 
 > **Automated, US-Focused Global News Aggregation & Distribution Platform**
 
-MetroScope is an automated news discovery engine engineered to aggregate real-time news intelligence from the GDELT DOC 2.0 API, normalize article metadata in PostgreSQL, and publish an editorial broadsheet digital reading experience built with Next.js and Tailwind CSS.
+MetroScope is an automated news discovery engine engineered to aggregate real-time news intelligence from the Webz.io News API, normalize article metadata in PostgreSQL, and publish an editorial broadsheet digital reading experience built with Next.js and Tailwind CSS.
 
 ---
 
@@ -10,7 +10,7 @@ MetroScope is an automated news discovery engine engineered to aggregate real-ti
 
 - **Frontend:** Next.js (App Router), TypeScript, Tailwind CSS, Playfair Display & Inter typography, next-themes (Light/Dark mode), Lucide Icons.
 - **Backend:** Python 3.11+, FastAPI, Pydantic v2 Settings, SQLAlchemy 2.0 (async), Alembic, HTTPX.
-- **News Discovery Worker:** Python asyncio, GDELT DOC 2.0 API client with tenacity exponential backoff, APScheduler.
+- **News Discovery Worker:** Python asyncio, Webz.io News API client, APScheduler (08:00 Sports, 20:00 Business Asia/Dhaka), PostgreSQL budget ledger.
 - **Database:** PostgreSQL 16 with persistent volume and connection pooling.
 - **Reverse Proxy:** Nginx 1.27 with gzip compression, caching, and Let's Encrypt SSL readiness.
 - **Orchestration & CI/CD:** Docker, Docker Compose, GitHub Actions.
@@ -23,7 +23,7 @@ MetroScope is an automated news discovery engine engineered to aggregate real-ti
 ```text
 metroscope/
 ├── frontend/             # Next.js 14 App Router web client
-├── backend/              # FastAPI application and GDELT discovery worker
+├── backend/              # FastAPI application and Webz.io discovery worker
 ├── infrastructure/       # Dockerfiles and Nginx reverse proxy configuration
 ├── docs/                 # Architectural and setup documentation
 ├── .github/workflows/    # CI/CD validation pipelines
@@ -133,4 +133,4 @@ docker compose config
 
 ## 7. License & Compliance
 
-News metadata indexed via the GDELT Project. Original publisher copyrights and trademarks are acknowledged and protected through direct attribution.
+News metadata indexed via Webz.io News API. Original publisher copyrights and trademarks are acknowledged and protected through strict fair-use metadata summaries and direct original article links. MetroScope operates in a metadata-only publication mode and does not republish full article text or store unauthorized third-party media.

@@ -91,3 +91,30 @@ Verify service status:
 docker compose ps
 docker compose logs -f backend
 ```
+
+## 4. Production Host Requirements (AWS EC2 t3.small — 2 GB RAM)
+
+Because the t3.small EC2 instance operates with 2 GB RAM, configure a 2 GB to 4 GB swapfile on Ubuntu Server 24.04 LTS to prevent Linux kernel Out-Of-Memory (OOM) kills during temporary workload surges:
+
+```bash
+# Create 2GB swap space on host
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Persist swapfile across reboots
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# Verify swap status
+sudo swapon --show
+free -h
+```
+
+Container memory limits are strictly constrained in `docker-compose.yml`:
+- `db`: 384 MB
+- `backend`: 384 MB
+- `worker`: 256 MB
+- `frontend`: 256 MB
+- `nginx`: 128 MB
+**Total Container Allocations:** ~1,408 MB (leaving >600 MB dedicated for Ubuntu kernel, systemd, and Docker daemon).
