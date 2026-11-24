@@ -2,130 +2,164 @@
 
 ## 1. Overview & Architecture
 
-MetroScope is deployed as a coordinated set of lightweight Docker containers orchestrated by **Docker Compose** on a single **AWS EC2 `t3.small`** instance running Ubuntu Server 24.04 LTS in Mumbai (`ap-south-1`).
+MetroScope is deployed as a coordinated set of lightweight Docker containers orchestrated by **Docker Compose** on an **AWS EC2 `t3.small`** instance running Ubuntu Server 24.04 LTS in Sydney (`ap-southeast-2`).
 
-### Approved Production Topology
+### Target Deployment Environment
 
-```
-Public Internet (HTTPS / HTTP)
-       │
-       ▼ (Ports 80, 443)
-┌──────────────────────────────────────────────────────────────┐
-│ AWS EC2 t3.small (ap-south-1) — 2 vCPU, 2 GiB RAM, 30 GB gp3 │
-│                                                              │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │                    Nginx Reverse Proxy                 │  │
-│  │      - Port 80: Let's Encrypt challenge & HTTP         │  │
-│  │      - Port 443: TLS 1.2/1.3 with Mozilla Intermediate │  │
-│  │      - Rate limits: API (15 r/s), Subscribe (3 r/s)    │  │
-│  │      - Memory Limit: 128 MB                            │  │
-│  └───────────────┬────────────────────────┬───────────────┘  │
-│                  │ (internal)             │ (internal)       │
-│                  ▼                        ▼                  │
-│  ┌────────────────────────┐    ┌──────────────────────────┐  │
-│  │ Next.js 14 Frontend    │    │ FastAPI Backend API      │  │
-│  │  - Node.js 20 Alpine   │    │  - Python 3.11 Slim      │  │
-│  │  - Standalone output   │    │  - Uvicorn ASGI Server   │  │
-│  │  - Port 3000           │    │  - Port 8000             │  │
-│  │  - Memory: 256 MB      │    │  - Memory: 384 MB        │  │
-│  └────────────────────────┘    └──────────┬───────────────┘  │
-│                                           │ (asyncpg)        │
-│  ┌────────────────────────┐               │                  │
-│  │ News Ingestion Worker  │               ▼                  │
-│  │  - APScheduler 3.10    │    ┌──────────────────────────┐  │
-│  │  - GDELT Poller (15m)  │    │ PostgreSQL 16 Alpine     │  │
-│  │  - Social Pub (30m)    │───▶│  - Port 5432 (Internal)  │  │
-│  │  - Newsletter (06:00)  │    │  - Tuned buffers (128MB) │  │
-│  │  - Memory: 256 MB      │    │  - Persistent Volume     │  │
-│  └────────────────────────┘    │  - Memory: 384 MB        │  │
-│                                └──────────────────────────┘  │
-└──────────────────────────────────────────────────────────────┘
-Total Container Memory Limit: 1,408 MB (Host retains ~640 MB)
+| Item | Specification |
+|---|---|
+| **Cloud Provider** | AWS EC2 |
+| **Region** | `ap-southeast-2` (Sydney) |
+| **Instance Type** | `t3.small` (2 vCPU, 2 GiB RAM, 30 GiB gp3) |
+| **Operating System** | Ubuntu Server 24.04 LTS |
+| **Deployment Root** | `/srv/metroscope/app` |
+| **Domain** | `themetroscope.com` (Canonical: `https://themetroscope.com`) |
+| **Git Repository** | `mahamudh-official/metroscope` |
+| **Deployment Branch** | `master` |
+| **Timezone** | `Asia/Dhaka` |
+
+### Server Directory Structure
+
+```text
+/srv/metroscope/
+├── app/                  # Application repository checkout & Compose stack
+├── backups/              # Tiered backups (daily/, weekly/, monthly/)
+├── config/               # Host-level configuration
+├── data/
+│   ├── media/
+│   ├── photo-cards/
+│   └── postgres/         # Persistent PostgreSQL data directory (UID 70:70, chmod 700)
+└── secrets/              # Restricted host secrets (chmod 700)
 ```
 
 ---
 
-## 2. Pre-Deployment Checklist
+## 2. Controlled Manual Deployment Policy
 
-Before deploying MetroScope to production:
-
-- [ ] EC2 `t3.small` provisioned in Mumbai (`ap-south-1`) with 30 GB gp3 storage.
-- [ ] Security Group allows inbound traffic **strictly** on:
-  - Port 22 (SSH — restricted to admin IP/CIDR).
-  - Port 80 (HTTP — public).
-  - Port 443 (HTTPS — public).
-  - **Port 5432 is strictly private** (no external inbound rule).
-- [ ] DNS `A` records point `metroscope.news` and `www.metroscope.news` to the EC2 Elastic IP.
-- [ ] GitHub Repository Secrets configured:
-  - `EC2_HOST`: Elastic IP or public hostname.
-  - `EC2_USER`: `ubuntu`.
-  - `EC2_SSH_PRIVATE_KEY`: OpenSSH private key for passwordless deployment.
-  - `GHCR_PULL_TOKEN`: Personal Access Token with `read:packages` scope (if private).
-- [ ] Production `.env` file created on the server at `/opt/metroscope/.env` with strong random passwords.
+In accordance with MetroScope's security policy:
+- **No Automatic SSH Deployment on Push**: Code pushes to `master` do **not** trigger automatic deployment to production.
+- **Continuous Integration (CI)**: GitHub Actions executes linting, typechecking, tests, and compose validation.
+- **Manual Image Building**: The `deploy-production.yml` workflow triggers on `workflow_dispatch` to build and push verified immutable containers to GitHub Container Registry (`ghcr.io/mahamudh-official/metroscope/*`).
+- **Controlled Host Deployment**: Deployments on EC2 are performed manually by the operator using `git pull origin master` and `./scripts/deploy.sh`.
 
 ---
 
-## 3. Automated CI/CD Deployment Flow
+## 3. Safe Two-Stage Deployment & TLS Bootstrap
 
-Deployments are executed automatically via GitHub Actions upon pushing to the `main` branch or pushing a semantic release tag (`v*.*.*`):
+To prevent startup failures caused by missing SSL certificates, deployment follows a strict two-stage process:
 
-1. **Verify**: Runs full unit & integration tests (`pytest`), ESLint, TypeScript check (`tsc --noEmit`), Next.js production build, and Docker Compose schema validation.
-2. **Build & Push**: Builds multi-stage production images, tags with immutable commit SHA (`${{ github.sha }}`) and `latest`, and publishes to GitHub Container Registry (`ghcr.io`).
-3. **Deploy**: Connects to the EC2 instance via SSH, updates local repository, runs `./scripts/deploy.sh`, executes database migrations (`alembic upgrade head`), starts containers with rolling update, and validates health probes.
-4. **Automated Rollback**: If health probes fail post-deployment, `./scripts/rollback.sh` is automatically triggered.
+### Stage A: HTTP Bootstrap (Initial Deployment)
+1. Nginx starts using `infrastructure/nginx/conf.d/metroscope.conf`.
+2. Serves HTTP traffic on port 80 and handles Let's Encrypt ACME challenges at `/.well-known/acme-challenge/`.
+3. Starts core services: `db`, `backend`, `frontend`, `nginx`.
+4. **Worker service is explicitly stopped** (safety policy: no automated ingestion or social posting during initial launch).
+5. Certbot can now verify domain ownership and obtain the initial certificate.
+
+### Stage B: HTTPS Activation
+1. Run `./scripts/enable_ssl.sh` after DNS `A` records point to the EC2 Elastic IP.
+2. Certbot obtains the certificate for `themetroscope.com`, `www.themetroscope.com`, and `api.themetroscope.com`.
+3. Activates `metroscope-ssl.conf` (HSTS, TLS 1.2/1.3, HTTP-to-HTTPS redirect).
+4. Verifies Nginx configuration syntax (`nginx -t`) and reloads Nginx gracefully.
 
 ---
 
-## 4. Manual Deployment Procedure
+## 4. Initial Production Deployment Procedure (Step-by-Step)
 
-To deploy manually or perform initial bootstrap on the EC2 instance:
-
+### Step 1: Connect to the Server
 ```bash
-# 1. SSH into the instance
 ssh -i ~/.ssh/metroscope_key.pem ubuntu@<EC2_ELASTIC_IP>
+```
 
-# 2. Navigate to project root
-cd /opt/metroscope
+### Step 2: Prepare Host Persistent Directory
+Ensure `/srv/metroscope/data/postgres` is prepared with the correct PostgreSQL Alpine UID/GID (70:70):
+```bash
+sudo chown -R 70:70 /srv/metroscope/data/postgres
+sudo chmod 700 /srv/metroscope/data/postgres
+```
 
-# 3. Pull latest git commits
-git pull origin main
+### Step 3: Clone or Update Repository
+```bash
+cd /srv/metroscope/app
 
-# 4. Verify environment file exists
-if [ ! -f .env ]; then
-    echo "ERROR: .env missing. Copy .env.production.template and set strong passwords."
-    exit 1
-fi
+# If initial setup:
+# git clone -b master https://github.com/mahamudh-official/metroscope.git .
 
-# 5. Make deployment scripts executable
+# If updating existing deployment:
+git fetch origin master
+git checkout master
+git pull origin master
+```
+
+### Step 4: Configure Production Environment
+Copy the production template and generate cryptographically secure secrets:
+```bash
+cp .env.production.template .env
+chmod 600 .env
+
+# Generate secure secrets:
+# OPERATOR_API_KEY (min 32 chars): openssl rand -hex 32
+# SECRET_KEY (min 32 chars): openssl rand -hex 32
+# POSTGRES_PASSWORD (min 24 chars): openssl rand -hex 24
+nano .env
+```
+
+Ensure safety defaults remain enforced:
+```env
+WORKER_ENABLED=false
+WEBZ_IO_COLLECTION_ENABLED=false
+SOCIAL_PUBLISHING_ENABLED=false
+SOCIAL_DRY_RUN=true
+FACEBOOK_ENABLED=false
+FACEBOOK_AUTO_PUBLISH=false
+X_ENABLED=false
+EMAIL_DRY_RUN=true
+```
+
+### Step 5: Authenticate with GHCR (If Images are Private)
+```bash
+echo "<YOUR_GITHUB_PAT>" | sudo docker login ghcr.io -u "<YOUR_GITHUB_USER>" --password-stdin
+```
+
+### Step 6: Execute Deployment Script
+```bash
 chmod +x scripts/*.sh
-
-# 6. Execute deployment
 ./scripts/deploy.sh
+```
+This script:
+1. Validates the Docker Compose configuration.
+2. Pulls target image tags for `backend`, `frontend`, `nginx`, and `db`.
+3. Starts `db` and waits for PostgreSQL health.
+4. Executes Alembic database migrations (`alembic upgrade head`).
+5. Starts `backend`, `frontend`, and `nginx`.
+6. Executes service-aware health checks across the internal network.
+7. Leaves `worker` stopped.
 
-# 7. Run diagnostic verification
+### Step 7: Validate Deployment Health
+```bash
 ./scripts/validate_deployment.sh
 ```
 
+### Step 8: Activate HTTPS / SSL (Once DNS is Live)
+Once DNS `A` records for `themetroscope.com`, `www.themetroscope.com`, and `api.themetroscope.com` resolve to the instance IP:
+```bash
+./scripts/enable_ssl.sh admin@themetroscope.com
+```
+
+### Step 9: Configure Automated Backups
+Install the daily backup cron job:
+```bash
+crontab -e
+# Add:
+30 2 * * * /srv/metroscope/app/scripts/backup_postgres.sh >> /srv/metroscope/backups/cron.log 2>&1
+```
+
 ---
 
-## 5. Post-Deployment Verification
+## 5. Rollback Procedure
 
-Verify all services are healthy and responsive:
-
+If any issue occurs, invoke the emergency rollback script:
 ```bash
-# Check container status and resource consumption
-docker compose -f docker-compose.prod.yml ps
-docker stats --no-stream
-
-# Verify backend health probes
-curl -I http://localhost:8000/health/ready
-curl -s http://localhost:8000/health/metrics | jq .
-
-# Verify frontend responses
-curl -I http://localhost:3000/
-curl -I http://localhost:3000/verify-subscription
-curl -I http://localhost:3000/unsubscribe
-
-# Verify Nginx reverse proxy
-curl -I http://localhost/health
+cd /srv/metroscope/app
+./scripts/rollback.sh
 ```
+The script pulls the previous verified release tag recorded in `.last_deployed_version`, restarts `backend`, `frontend`, and `nginx`, and validates health probes. Database volumes and data are never deleted.

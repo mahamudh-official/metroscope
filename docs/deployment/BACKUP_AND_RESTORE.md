@@ -1,114 +1,121 @@
-# MetroScope — PostgreSQL Backup & Recovery Runbook
+# MetroScope — PostgreSQL Backup & Disaster Recovery Runbook
 
 ## 1. Backup Architecture Overview
 
-MetroScope uses a practical, zero-dependency PostgreSQL backup and recovery system designed to run on the EC2 `t3.small` instance without exhausting host memory or storage.
+MetroScope employs an automated logical backup and tiered retention system designed for operational reliability on AWS EC2 `t3.small` and full portability across cloud and VPS providers (such as Hostinger VPS).
 
 ### Key Characteristics:
-- **Consistent Logical Dumps**: Generated via `pg_dump` with `--clean --if-exists --no-owner --no-privileges`.
-- **Stream Compression**: Direct piped compression through `gzip -9` creates `.sql.gz` archives with ~85% space savings.
-- **Integrity Validation**: Immediate test extraction via `gzip -t` confirms archive readability.
-- **Checksum Verification**: Generates `.sha256` digest alongside every archive.
-- **Configurable Retention**: Prunes local archives according to retention limits.
-- **Optional S3 Offsite Sync**: Automatically pushes backups to an S3-compatible bucket if `BACKUP_S3_BUCKET` is defined.
+- **Clean Logical Dumps**: Generated via `pg_dump` with `--clean --if-exists --no-owner --no-privileges`.
+- **Stream Compression**: Piped through `gzip -9` creating `.sql.gz` archives.
+- **Integrity Verification**: Archive readability validated immediately via `gzip -t`.
+- **Cryptographic Checksums**: Generates `.sha256` digest alongside every archive.
+- **Tiered Retention Policy**: Enforces 7 Daily, 4 Weekly, and 3 Monthly retention tiers.
+- **Zero-Secret Leakage**: Database passwords are provided via environment variables, never logged.
+- **Portability Manifest**: Exports metadata (`latest_backup_manifest.json`) for seamless migration.
 
 ---
 
-## 2. Automated Daily Backups via Cron
+## 2. Retention Policy Architecture
 
-Configure an automated daily backup job on the host via `crontab -e`:
+Backups are organized in `/srv/metroscope/backups/`:
+
+```text
+/srv/metroscope/backups/
+├── daily/                        # Retained for 7 days (pruned via mtime +7)
+│   ├── metroscope_pg_20261124_023000Z.sql.gz
+│   └── metroscope_pg_20261124_023000Z.sql.gz.sha256
+├── weekly/                       # Promoted every Sunday; retained for 28 days
+│   └── metroscope_pg_20261122_023000Z.sql.gz
+├── monthly/                      # Promoted on the 1st of every month; retained for 90 days
+│   └── metroscope_pg_20261101_023000Z.sql.gz
+├── backup.log                    # Append-only execution log
+└── latest_backup_manifest.json   # Machine-readable portability manifest
+```
+
+| Tier | Trigger | Retention Window | Max Retained |
+|---|---|---|---|
+| **Daily** | Nightly at 02:30 UTC | 7 Days | 7 backups |
+| **Weekly** | Every Sunday | 28 Days (4 Weeks) | 4 backups |
+| **Monthly** | 1st of each Month | 90 Days (3 Months) | 3 backups |
+
+---
+
+## 3. Automated Nightly Cron Setup
+
+Install the backup job under the `ubuntu` user crontab:
 
 ```bash
-# Open crontab for ubuntu user:
 crontab -e
 
-# Add automated daily backup at 02:30 AM UTC:
-30 2 * * * /opt/metroscope/scripts/backup_postgres.sh >> /opt/metroscope/backups/cron.log 2>&1
+# Run nightly at 02:30 UTC:
+30 2 * * * /srv/metroscope/app/scripts/backup_postgres.sh >> /srv/metroscope/backups/cron.log 2>&1
 ```
-
-### Retention Policy
-
-| Tier | Window | Frequency | Pruning Schedule |
-| :--- | :--- | :--- | :--- |
-| **Daily** | Past 7 days | Every night (02:30 UTC) | Retained for 7 days (`RETENTION_DAILY_DAYS=7`) |
-| **Weekly** | Past 4 weeks | Sunday night | Retained for 28 days (`RETENTION_WEEKLY_DAYS=28`) |
-| **Monthly** | Past 3 months | 1st of month | Retained for 90 days (`RETENTION_MONTHLY_DAYS=90`) |
 
 ---
 
-## 3. Manual Backup Execution
+## 4. Manual Backup Execution
 
-To generate a manual backup on demand (e.g. before applying migrations or upgrading images):
+To create an on-demand backup prior to applying migrations, updates, or maintenance:
 
 ```bash
-cd /opt/metroscope
-
-# Run backup script
+cd /srv/metroscope/app
 ./scripts/backup_postgres.sh
-
-# Verify output in backups directory
-ls -lh backups/
-# metroscope_pg_20261108_093000Z.sql.gz
-# metroscope_pg_20261108_093000Z.sql.gz.sha256
 ```
 
 ---
 
-## 4. Database Restoration Procedure
+## 5. Database Restoration Procedure
 
-Restorations are executed via `scripts/restore_postgres.sh`. The script validates gzip integrity, checks the SHA-256 digest, requests user confirmation, streams the dump into `psql`, and executes post-restore verification queries.
+Restorations are executed via `scripts/restore_postgres.sh`. The script validates gzip integrity, checks the SHA-256 digest, requests user confirmation, streams the dump into `psql`, and verifies entity row counts.
 
 ### Step 1: List Available Backups
 ```bash
-ls -lt /opt/metroscope/backups/*.sql.gz
+ls -lt /srv/metroscope/backups/daily/*.sql.gz
 ```
 
-### Step 2: Stop Ingestion Worker to Prevent Concurrent Writes
+### Step 2: Execute Restore
 ```bash
-docker compose -f docker-compose.prod.yml stop worker
+# Interactive mode (prompts for confirmation):
+./scripts/restore_postgres.sh /srv/metroscope/backups/daily/metroscope_pg_20261124_023000Z.sql.gz
+
+# Automated / non-interactive mode:
+./scripts/restore_postgres.sh /srv/metroscope/backups/daily/metroscope_pg_20261124_023000Z.sql.gz --force
 ```
 
-### Step 3: Execute Restoration
-```bash
-# Interactive mode (prompts for explicit 'yes' confirmation):
-./scripts/restore_postgres.sh backups/metroscope_pg_20261108_093000Z.sql.gz
-
-# Automated / non-interactive mode (for disaster recovery pipelines):
-./scripts/restore_postgres.sh backups/metroscope_pg_20261108_093000Z.sql.gz --force
-```
-
-### Step 4: Review Post-Restore Diagnostics
-The script automatically executes and displays verification counts:
-```
---- Post-Restore Entity Counts ---
-     entity      | count 
------------------+-------
- news_articles   |  1842
- news_sources    |    24
- news_categories |     8
- email_subscribers|    47
- alembic_version |     1
-
-Current Alembic database revision at: 0008_email_newsletter
-```
-
-### Step 5: Restart All Services
-```bash
-docker compose -f docker-compose.prod.yml start worker
-docker compose -f docker-compose.prod.yml ps
-```
+### Step 3: Verify Integrity
+The script automatically queries entity counts for `news_articles`, `news_sources`, `news_categories`, `social_posts`, and `alembic_version`.
 
 ---
 
-## 5. Disaster Recovery: Restoring from Remote S3
+## 6. Migration to Another VPS (e.g. Hostinger VPS)
 
-If the local EC2 storage is lost or a new instance is provisioned:
+To migrate MetroScope to another server:
 
-```bash
-# 1. Download latest archive from S3
-aws s3 cp s3://<YOUR_BACKUP_BUCKET>/backups/metroscope_pg_latest.sql.gz /opt/metroscope/backups/
-aws s3 cp s3://<YOUR_BACKUP_BUCKET>/backups/metroscope_pg_latest.sql.gz.sha256 /opt/metroscope/backups/
+1. **On Source Server (AWS EC2):**
+   ```bash
+   cd /srv/metroscope/app
+   ./scripts/backup_postgres.sh
+   tar -czf /tmp/metroscope_migration.tar.gz \
+       /srv/metroscope/backups/daily/latest* \
+       /srv/metroscope/app/.env \
+       /srv/metroscope/app/docker-compose.prod.yml
+   ```
+2. **Transfer to Destination Server:**
+   ```bash
+   scp /tmp/metroscope_migration.tar.gz user@<DESTINATION_IP>:/tmp/
+   ```
+3. **On Destination Server (Hostinger):**
+   - Install Docker and Docker Compose.
+   - Clone `mahamudh-official/metroscope` into `/srv/metroscope/app`.
+   - Prepare `/srv/metroscope/data/postgres` (`chown -R 70:70`, `chmod 700`).
+   - Extract `.env` into `/srv/metroscope/app/.env`.
+   - Start database: `sudo docker compose -f docker-compose.prod.yml up -d db`.
+   - Restore database: `./scripts/restore_postgres.sh <transferred_backup_file>.sql.gz --force`.
+   - Deploy stack: `./scripts/deploy.sh`.
 
-# 2. Execute restore
-/opt/metroscope/scripts/restore_postgres.sh /opt/metroscope/backups/metroscope_pg_latest.sql.gz
-```
+---
+
+## 7. RPO and RTO Specifications
+
+- **Recovery Point Objective (RPO)**: Up to 24 hours with daily backups. A logical backup captures state at execution time. It is not continuous replication.
+- **Recovery Time Objective (RTO)**: Under 5 minutes to restore the database dump and restart application containers.

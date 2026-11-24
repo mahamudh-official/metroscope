@@ -19,7 +19,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-metroscope_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${POSTGRES_DATA_DIR:-/srv/metroscope/data/postgres}:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-metroscope_user} -d ${POSTGRES_DB:-metroscope}"]
       interval: 10s
@@ -42,7 +42,7 @@ services:
       - metroscope_net
 
   backend:
-    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-metroscope}/backend:${IMAGE_TAG:-latest}
+    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-mahamudh-official}/${GHCR_REPO:-metroscope}/backend:${IMAGE_TAG:-latest}
     container_name: metroscope-backend
     restart: unless-stopped
     environment:
@@ -60,8 +60,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-metroscope_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-metroscope}
       DATABASE_SYNC_URL: postgresql://${POSTGRES_USER:-metroscope_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-metroscope}
-      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-["themetroscope.com","www.themetroscope.com","api.themetroscope.com","metroscope.news","www.metroscope.news","backend","localhost","127.0.0.1"]}
-      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["https://themetroscope.com","https://www.themetroscope.com","https://api.themetroscope.com","https://metroscope.news","https://www.metroscope.news"]}
+      SECRET_KEY: ${SECRET_KEY}
+      OPERATOR_API_KEY: ${OPERATOR_API_KEY}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-["themetroscope.com","www.themetroscope.com","api.themetroscope.com","backend","localhost","127.0.0.1"]}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["https://themetroscope.com","https://www.themetroscope.com","https://api.themetroscope.com"]}
       SITE_URL: ${SITE_URL:-https://themetroscope.com}
       WORKER_ENABLED: "false"
       EMAIL_DRY_RUN: ${EMAIL_DRY_RUN:-true}
@@ -75,6 +77,10 @@ services:
       SMTP_TIMEOUT_SECONDS: ${SMTP_TIMEOUT_SECONDS:-15.0}
       SUBSCRIPTION_RATE_LIMIT_PER_HOUR: ${SUBSCRIPTION_RATE_LIMIT_PER_HOUR:-5}
       VERIFICATION_TOKEN_EXPIRE_HOURS: ${VERIFICATION_TOKEN_EXPIRE_HOURS:-24}
+      SCREENSHOTONE_ACCESS_KEY_1: ${SCREENSHOTONE_ACCESS_KEY_1:-}
+      SCREENSHOTONE_ACCESS_KEY_2: ${SCREENSHOTONE_ACCESS_KEY_2:-}
+      SCREENSHOTONE_ACCESS_KEY: ${SCREENSHOTONE_ACCESS_KEY:-}
+      SCREENSHOTONE_SECRET_KEY: ${SCREENSHOTONE_SECRET_KEY:-}
     depends_on:
       db:
         condition: service_healthy
@@ -100,7 +106,9 @@ services:
       - metroscope_net
 
   worker:
-    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-metroscope}/worker:${IMAGE_TAG:-latest}
+    profiles:
+      - worker
+    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-mahamudh-official}/${GHCR_REPO:-metroscope}/worker:${IMAGE_TAG:-latest}
     container_name: metroscope-worker
     restart: unless-stopped
     environment:
@@ -112,12 +120,15 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-metroscope_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-metroscope_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-metroscope}
+      DATABASE_SYNC_URL: postgresql://${POSTGRES_USER:-metroscope_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-metroscope}
+      SECRET_KEY: ${SECRET_KEY}
+      OPERATOR_API_KEY: ${OPERATOR_API_KEY}
       WEBZ_IO_API_KEY: ${WEBZ_IO_API_KEY}
       WEBZ_IO_BASE_URL: ${WEBZ_IO_BASE_URL:-https://api.webz.io}
       WEBZ_IO_ENDPOINT: ${WEBZ_IO_ENDPOINT:-/newsApiLite}
-      WEBZ_IO_COLLECTION_ENABLED: ${WEBZ_IO_COLLECTION_ENABLED:-true}
+      WEBZ_IO_COLLECTION_ENABLED: ${WEBZ_IO_COLLECTION_ENABLED:-false}
       WEBZ_IO_TIMEZONE: ${WEBZ_IO_TIMEZONE:-Asia/Dhaka}
-      WORKER_ENABLED: ${WORKER_ENABLED:-true}
+      WORKER_ENABLED: ${WORKER_ENABLED:-false}
       SITE_URL: ${SITE_URL:-https://themetroscope.com}
       SOCIAL_PUBLISHING_ENABLED: ${SOCIAL_PUBLISHING_ENABLED:-false}
       SOCIAL_DRY_RUN: ${SOCIAL_DRY_RUN:-true}
@@ -128,7 +139,8 @@ services:
       FACEBOOK_ENABLED: ${FACEBOOK_ENABLED:-false}
       FACEBOOK_PAGE_ID: ${FACEBOOK_PAGE_ID:-}
       FACEBOOK_PAGE_ACCESS_TOKEN: ${FACEBOOK_PAGE_ACCESS_TOKEN:-}
-      FACEBOOK_API_VERSION: ${FACEBOOK_API_VERSION:-v21.0}
+      FACEBOOK_GRAPH_API_VERSION: ${FACEBOOK_GRAPH_API_VERSION:-v27.0}
+      FACEBOOK_API_VERSION: ${FACEBOOK_API_VERSION:-v27.0}
       FACEBOOK_MAX_POSTS_PER_DAY: ${FACEBOOK_MAX_POSTS_PER_DAY:-48}
       X_ENABLED: ${X_ENABLED:-false}
       X_API_KEY: ${X_API_KEY:-}
@@ -169,7 +181,7 @@ services:
       - metroscope_net
 
   frontend:
-    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-metroscope}/frontend:${IMAGE_TAG:-latest}
+    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-mahamudh-official}/${GHCR_REPO:-metroscope}/frontend:${IMAGE_TAG:-latest}
     container_name: metroscope-frontend
     restart: unless-stopped
     environment:
@@ -241,6 +253,16 @@ services:
         max-file: "3"
     networks:
       - metroscope_net
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: metroscope-certbot
+    profiles:
+      - certbot
+    volumes:
+      - ./infrastructure/nginx/certbot/conf:/etc/letsencrypt
+      - ./infrastructure/nginx/certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
 networks:
   metroscope_net:

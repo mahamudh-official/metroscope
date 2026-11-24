@@ -2,6 +2,7 @@
 # ==============================================================================
 # MetroScope — Production Rollback Script
 # Target: AWS EC2 t3.small, Docker Compose
+# Deployment Path: /srv/metroscope/app
 # ==============================================================================
 set -Eeuo pipefail
 
@@ -13,6 +14,12 @@ COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.prod.yml"
 ENV_FILE="${PROJECT_ROOT}/.env"
 VERSION_HISTORY_FILE="${PROJECT_ROOT}/.last_deployed_version"
 ROLLBACK_LOG="${PROJECT_ROOT}/rollback.log"
+
+# Determine Docker Command
+DOCKER_CMD="docker"
+if command -v sudo >/dev/null 2>&1 && ! docker info >/dev/null 2>&1; then
+    DOCKER_CMD="sudo docker"
+fi
 
 log() {
     local level="$1"
@@ -48,27 +55,28 @@ if [[ -f "${ENV_FILE}" ]]; then
     set +a
 fi
 
-# 2. Pull / Verify Target Rollback Images
+# 2. Pull / Verify Target Rollback Images (Core services only)
 log "INFO" "Ensuring rollback images are pulled..."
-IMAGE_TAG="${TARGET_ROLLBACK_TAG}" docker compose -f "${COMPOSE_FILE}" pull backend worker frontend || {
+IMAGE_TAG="${TARGET_ROLLBACK_TAG}" ${DOCKER_CMD} compose -f "${COMPOSE_FILE}" pull backend frontend nginx || {
     log "WARNING" "Pulling rollback images from registry failed. Attempting to use locally cached images..."
 }
 
-# 3. Restart Application Containers with Rollback Image Tag
-log "INFO" "Recreating application containers with rollback tag '${TARGET_ROLLBACK_TAG}'..."
-IMAGE_TAG="${TARGET_ROLLBACK_TAG}" docker compose -f "${COMPOSE_FILE}" up -d --remove-orphans backend worker frontend nginx
+# 3. Restart Core Application Containers with Rollback Image Tag (Worker excluded)
+log "INFO" "Recreating core application containers with rollback tag '${TARGET_ROLLBACK_TAG}'..."
+IMAGE_TAG="${TARGET_ROLLBACK_TAG}" ${DOCKER_CMD} compose -f "${COMPOSE_FILE}" up -d --remove-orphans backend frontend nginx
 
-# 4. Verify Health After Rollback
+# 4. Verify Health After Rollback (Service-Aware Network Probes)
 log "INFO" "Verifying application health post-rollback..."
 HEALTHY=false
 
 for attempt in {1..20}; do
-    BACKEND_CODE="$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health/ready || true)"
-    FRONTEND_CODE="$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/ || true)"
+    BACKEND_STATUS="$(${DOCKER_CMD} compose -f "${COMPOSE_FILE}" exec -T backend curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/health/ready 2>/dev/null || true)"
+    FRONTEND_STATUS="$(${DOCKER_CMD} compose -f "${COMPOSE_FILE}" exec -T frontend wget -q -O /dev/null --spider http://127.0.0.1:3000/ 2>/dev/null && echo "200" || true)"
+    NGINX_STATUS="$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/health 2>/dev/null || true)"
 
-    log "INFO" "Rollback health check ${attempt}/20 - Backend: ${BACKEND_CODE}, Frontend: ${FRONTEND_CODE}"
+    log "INFO" "Rollback health check ${attempt}/20 — Backend: ${BACKEND_STATUS:-failed}, Frontend: ${FRONTEND_STATUS:-failed}, Nginx: ${NGINX_STATUS:-failed}"
 
-    if [[ "${BACKEND_CODE}" == "200" && "${FRONTEND_CODE}" == "200" ]]; then
+    if [[ "${BACKEND_STATUS}" == "200" && "${FRONTEND_STATUS}" == "200" && "${NGINX_STATUS}" == "200" ]]; then
         HEALTHY=true
         break
     fi
@@ -76,7 +84,7 @@ for attempt in {1..20}; do
 done
 
 if [[ "${HEALTHY}" != "true" ]]; then
-    log "ERROR" "CRITICAL: Rollback health verification failed! Check container logs via 'docker compose -f docker-compose.prod.yml logs'."
+    log "ERROR" "CRITICAL: Rollback health verification failed! Check container logs via '${DOCKER_CMD} compose -f ${COMPOSE_FILE} logs'."
     exit 1
 fi
 

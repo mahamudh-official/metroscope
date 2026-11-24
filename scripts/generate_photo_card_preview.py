@@ -20,7 +20,7 @@ def main():
         category="Technology",
         published_at=datetime.datetime(2026, 11, 17, 12, 0, 0, tzinfo=datetime.timezone.utc),
         image_url="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=1600&q=88",
-        website_url="https://metroscope.news",
+        website_url="https://themetroscope.com",
     )
     html_tech = service.render_html(sample_tech, canvas_fixed=False)
 
@@ -41,7 +41,7 @@ def main():
         category="Environment",
         published_at=datetime.datetime(2026, 11, 17, 14, 30, 0, tzinfo=datetime.timezone.utc),
         image_url=None,
-        website_url="https://metroscope.news",
+        website_url="https://themetroscope.com",
     )
     html_fallback = service.render_html(sample_fallback, canvas_fixed=False)
     fallback_file = Path("docs/reports/photo_card_fallback_preview.html")

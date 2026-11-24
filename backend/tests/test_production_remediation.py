@@ -14,6 +14,7 @@ Verifies the five remediation mandates:
 import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
+from httpx import AsyncClient
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
