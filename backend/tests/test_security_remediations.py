@@ -196,6 +196,15 @@ class TestScreenshotOneProtection:
 
 
 
+def _repo_root() -> Path:
+    current = Path.cwd()
+    if (current / "docker-compose.yml").exists():
+        return current
+    if (current.parent / "docker-compose.yml").exists():
+        return current.parent
+    return Path(__file__).resolve().parent.parent.parent
+
+
 # ---------------------------------------------------------------------------
 # 3. VULN-03: PostgreSQL Port Exposure in Compose Files
 # ---------------------------------------------------------------------------
@@ -203,7 +212,7 @@ class TestPostgresPortIsolation:
     """Verifies that PostgreSQL port 5432 is not exposed to 0.0.0.0."""
 
     def test_docker_compose_binds_postgres_to_localhost_only(self):
-        compose_path = Path("docker-compose.yml")
+        compose_path = _repo_root() / "docker-compose.yml"
         assert compose_path.exists(), "docker-compose.yml must exist"
         with open(compose_path, "r", encoding="utf-8") as f:
             compose_data = yaml.safe_load(f)
@@ -218,7 +227,7 @@ class TestPostgresPortIsolation:
             )
 
     def test_docker_compose_prod_has_no_host_port_for_db(self):
-        compose_prod_path = Path("docker-compose.prod.yml")
+        compose_prod_path = _repo_root() / "docker-compose.prod.yml"
         assert compose_prod_path.exists(), "docker-compose.prod.yml must exist"
         with open(compose_prod_path, "r", encoding="utf-8") as f:
             compose_data = yaml.safe_load(f)
@@ -412,7 +421,7 @@ class TestCIAuditPolicyAndCSPHardening:
     """Verifies that CI does not suppress security audit codes and CSP eliminates unsafe-eval."""
 
     def test_ci_workflow_does_not_suppress_audit_failures(self):
-        ci_path = Path(".github/workflows/ci.yml")
+        ci_path = _repo_root() / ".github/workflows/ci.yml"
         assert ci_path.exists()
         content = ci_path.read_text(encoding="utf-8")
         assert "npm audit" in content
@@ -421,7 +430,7 @@ class TestCIAuditPolicyAndCSPHardening:
         assert "pip-audit -r requirements.txt || true" not in content
 
     def test_nginx_csp_eliminates_unsafe_eval(self):
-        nginx_conf = Path("infrastructure/nginx/conf.d/metroscope.conf")
+        nginx_conf = _repo_root() / "infrastructure/nginx/conf.d/metroscope.conf"
         assert nginx_conf.exists()
         content = nginx_conf.read_text(encoding="utf-8")
         assert "Content-Security-Policy" in content
