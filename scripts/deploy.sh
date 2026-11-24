@@ -16,8 +16,8 @@ VERSION_HISTORY_FILE="${PROJECT_ROOT}/.last_deployed_version"
 DEPLOY_LOG="${PROJECT_ROOT}/deploy.log"
 
 # Determine Docker Command (support running without sudo if in docker group, or with sudo)
-DOCKER_CMD="docker"
-if command -v sudo >/dev/null 2>&1 && ! docker info >/dev/null 2>&1; then
+DOCKER_CMD="${DOCKER_CMD:-docker}"
+if [[ "${DOCKER_CMD}" == "docker" ]] && command -v sudo >/dev/null 2>&1 && ! docker info >/dev/null 2>&1; then
     DOCKER_CMD="sudo docker"
 fi
 
@@ -48,9 +48,47 @@ set -a
 source "${ENV_FILE}"
 set +a
 
-# Determine Target Image Tag and Registry
-TARGET_IMAGE_TAG="${IMAGE_TAG:-latest}"
-log "INFO" "Target Deployment Image Tag: ${TARGET_IMAGE_TAG}"
+# Determine and Enforce Immutable Image Tag
+TARGET_IMAGE_TAG="${IMAGE_TAG:-}"
+if [[ -z "${TARGET_IMAGE_TAG}" ]]; then
+    log "ERROR" "IMAGE_TAG is required. Deployment cannot proceed without an explicit Git SHA tag."
+    log "ERROR" "Example: export IMAGE_TAG=1e91398 && ./scripts/deploy.sh"
+    exit 1
+fi
+
+if [[ "${TARGET_IMAGE_TAG}" == "latest" ]]; then
+    log "ERROR" "IMAGE_TAG cannot be 'latest'. Production deployment must be pinned to an immutable Git SHA."
+    exit 1
+fi
+
+if [[ ! "${TARGET_IMAGE_TAG}" =~ ^[0-9a-fA-F]{7,40}$ ]]; then
+    log "ERROR" "Invalid IMAGE_TAG '${TARGET_IMAGE_TAG}'. Must be a 7 to 40 character hexadecimal Git SHA."
+    exit 1
+fi
+
+TARGET_IMAGE_TAG="$(echo "${TARGET_IMAGE_TAG}" | tr '[:upper:]' '[:lower:]')"
+export IMAGE_TAG="${TARGET_IMAGE_TAG}"
+
+log "INFO" "=================================================================="
+log "INFO" "Target Deployment Image Tag: ${TARGET_IMAGE_TAG} (verified immutable Git SHA)"
+log "INFO" "Target Services: backend, frontend, nginx (all pinned to ${TARGET_IMAGE_TAG})"
+log "INFO" "=================================================================="
+
+# Verify Required Production Secrets are Configured and Not Placeholders
+if [[ -z "${SECRET_KEY:-}" || "${SECRET_KEY}" == *"CHANGE_ME"* ]]; then
+    log "ERROR" "SECRET_KEY is missing or contains placeholder text in ${ENV_FILE}."
+    exit 1
+fi
+
+if [[ -z "${OPERATOR_API_KEY:-}" || "${OPERATOR_API_KEY}" == *"CHANGE_ME"* ]]; then
+    log "ERROR" "OPERATOR_API_KEY is missing or contains placeholder text in ${ENV_FILE}."
+    exit 1
+fi
+
+if [[ -z "${POSTGRES_PASSWORD:-}" || "${POSTGRES_PASSWORD}" == *"CHANGE_ME"* ]]; then
+    log "ERROR" "POSTGRES_PASSWORD is missing or contains placeholder text in ${ENV_FILE}."
+    exit 1
+fi
 
 # 2. Record Prior Version for Instant Rollback
 if [[ -f "${VERSION_HISTORY_FILE}" ]]; then
@@ -67,6 +105,11 @@ if ! ${DOCKER_CMD} compose -f "${COMPOSE_FILE}" config -q; then
     exit 1
 fi
 log "INFO" "Docker Compose configuration is valid."
+
+if [[ "${1:-}" == "--dry-run" ]]; then
+    log "INFO" "Dry-run pre-flight check successful: Tag '${TARGET_IMAGE_TAG}' and Compose configuration validated. No containers started."
+    exit 0
+fi
 
 # 4. Authenticate with GitHub Container Registry (if credentials provided)
 if [[ -n "${GHCR_TOKEN:-}" && -n "${GHCR_USER:-}" ]]; then

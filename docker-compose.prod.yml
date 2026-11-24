@@ -42,7 +42,7 @@ services:
       - metroscope_net
 
   backend:
-    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-mahamudh-official}/${GHCR_REPO:-metroscope}/backend:${IMAGE_TAG:-latest}
+    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-mahamudh-official}/${GHCR_REPO:-metroscope}/backend:${IMAGE_TAG:?IMAGE_TAG must be set to an immutable commit SHA (e.g. export IMAGE_TAG=1e91398)}
     container_name: metroscope-backend
     restart: unless-stopped
     environment:
@@ -108,7 +108,7 @@ services:
   worker:
     profiles:
       - worker
-    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-mahamudh-official}/${GHCR_REPO:-metroscope}/worker:${IMAGE_TAG:-latest}
+    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-mahamudh-official}/${GHCR_REPO:-metroscope}/worker:${IMAGE_TAG:?IMAGE_TAG must be set to an immutable commit SHA (e.g. export IMAGE_TAG=1e91398)}
     container_name: metroscope-worker
     restart: unless-stopped
     environment:
@@ -181,7 +181,7 @@ services:
       - metroscope_net
 
   frontend:
-    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-mahamudh-official}/${GHCR_REPO:-metroscope}/frontend:${IMAGE_TAG:-latest}
+    image: ${GHCR_REGISTRY:-ghcr.io}/${GHCR_OWNER:-mahamudh-official}/${GHCR_REPO:-metroscope}/frontend:${IMAGE_TAG:?IMAGE_TAG must be set to an immutable commit SHA (e.g. export IMAGE_TAG=1e91398)}
     container_name: metroscope-frontend
     restart: unless-stopped
     environment:

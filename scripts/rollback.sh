@@ -45,7 +45,15 @@ if [[ -z "${TARGET_ROLLBACK_TAG}" ]]; then
     fi
 fi
 
-log "INFO" "Rolling back to verified image release tag: ${TARGET_ROLLBACK_TAG}"
+if [[ "${TARGET_ROLLBACK_TAG}" == "latest" || ! "${TARGET_ROLLBACK_TAG}" =~ ^[0-9a-fA-F]{7,40}$ ]]; then
+    log "ERROR" "Invalid rollback tag '${TARGET_ROLLBACK_TAG}'. Must be a valid 7 to 40 character hexadecimal Git SHA."
+    exit 1
+fi
+
+TARGET_ROLLBACK_TAG="$(echo "${TARGET_ROLLBACK_TAG}" | tr '[:upper:]' '[:lower:]')"
+export IMAGE_TAG="${TARGET_ROLLBACK_TAG}"
+
+log "INFO" "Rolling back to verified immutable image release tag: ${TARGET_ROLLBACK_TAG}"
 
 # Load environment
 if [[ -f "${ENV_FILE}" ]]; then

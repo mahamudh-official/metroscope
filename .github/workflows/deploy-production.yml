@@ -84,6 +84,7 @@ jobs:
           docker compose -f docker-compose.prod.yml config -q
         env:
           POSTGRES_PASSWORD: dummy_validation_password_12345
+          IMAGE_TAG: 1e91398
 
   # ----------------------------------------------------------------------------
   # Stage 2: Build & Publish Immutable Production Images to GHCR

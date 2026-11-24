@@ -62,6 +62,7 @@ check_step "Docker Compose v2 available" "${DOCKER_CMD} compose version"
 
 # 2. Environment Configuration
 check_step "Environment file (.env) exists" "[[ -f '${PROJECT_ROOT}/.env' ]]"
+check_step "Immutable IMAGE_TAG configured (7-40 hex chars)" "[[ '${IMAGE_TAG:-}' =~ ^[0-9a-fA-F]{7,40}$ ]] && [[ '${IMAGE_TAG:-}' != 'latest' ]]"
 check_step "Docker Compose config valid" "${DOCKER_CMD} compose -f '${COMPOSE_FILE}' config -q"
 
 # 3. Persistent Storage

@@ -237,6 +237,11 @@ class TestPostgresPortIsolation:
             "docker-compose.prod.yml must NOT expose host ports for db service"
         )
 
+        for svc_name in ["backend", "worker", "frontend"]:
+            image_str = compose_data["services"][svc_name]["image"]
+            assert "${IMAGE_TAG:?" in image_str, f"{svc_name} image must require IMAGE_TAG"
+            assert ":-latest" not in image_str, f"{svc_name} must NOT have :-latest fallback"
+
 
 # ---------------------------------------------------------------------------
 # 4. VULN-08: Production Domain & ALLOWED_HOSTS Hardening
